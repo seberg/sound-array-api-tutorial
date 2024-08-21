@@ -9,7 +9,7 @@ import pytest
 # scipy and scikit-learn both have similar but different setups.
 available_backends = {
     "numpy": (np, "cpu"),
-    "strict": (array_api_strict, "cpu"),
+    "strict": (array_api_strict, None),
 }
 
 try:
@@ -28,14 +28,16 @@ except ImportError:
     pass
 else:
     # Torch was found, so we can use it:
-    available_backends["cupy"] = (cupy, "cuda")
+    available_backends["cupy"] = (cupy, None)
 
 
 def get_available_backends():
-    for key, (array_mod, device) in available_backends:
+    for key, (array_mod, device) in available_backends.items():
         # The module is the original module, use array_api_compat to fetch
         # the compatible namespace:
         xp = array_api_compat.get_namespace(array_mod.asarray(1))
-        yield pytest.param(xp, device, name=key)
+        yield pytest.param(xp, device, id=key)
 
-array_api_compatible = pytest.mark.parametrize("xp, device, to_numpy")
+array_api_compatible = pytest.mark.parametrize(
+    "xp, device", get_available_backends()
+)
